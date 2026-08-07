@@ -1,0 +1,49 @@
+{
+    "predictions": [
+        {
+            "threat": false,
+            "confidence": 0.9999928296141133,
+            "threat_type": "normal",
+            "rf_prediction": 0,
+            "if_prediction": 1,
+            "explanation": "Connection flagged as NORMAL with 0.0% confidence because: packet_size_min (decreased threat score), dload (decreased threat score), dataset_source_nbiot (decreased threat score)",
+            "sample_id": 0
+        },
+        {
+            "threat": false,
+            "confidence": 0.9998692291263624,
+            "threat_type": "normal",
+            "rf_prediction": 0,
+            "if_prediction": 1,
+            "explanation": "Connection flagged as NORMAL with 0.0% confidence because: packet_size_min (decreased threat score), dload (decreased threat score), dataset_source_nbiot (decreased threat score)",
+            "sample_id": 1
+        },
+        {
+            "threat": false,
+            "confidence": 0.9999928296141133,
+            "threat_type": "normal",
+            "rf_prediction": 0,
+            "if_prediction": 1,
+            "explanation": "Connection flagged as NORMAL with 0.0% confidence because: packet_size_min (decreased threat score), dload (decreased threat score), dataset_source_nbiot (decreased threat score)",
+            "sample_id": 2
+        },
+        {
+            "threat": false,
+            "confidence": 0.9999928296141133,
+            "threat_type": "normal",
+            "rf_prediction": 0,
+            "if_prediction": 1,
+            "explanation": "Connection flagged as NORMAL with 0.0% confidence because: packet_size_min (decreased threat score), dload (decreased threat score), dataset_source_nbiot (decreased threat score)",
+            "sample_id": 3
+        },
+        {
+            "threat": true,
+            "confidence": 0.9471584081994607,
+            "threat_type": "known_attack",
+            "rf_prediction": 1,
+            "if_prediction": 1,
+            "explanation": "Connection flagged as ATTACK with 94.7% confidence because: dttl (increased threat score), ct_srv_dst (increased threat score), packet_size_min (increased threat score)",
+            "sample_id": 4
+        }
+    ]
+}

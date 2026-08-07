@@ -1,0 +1,24 @@
+# Virtual Environments
+venv/
+env/
+.env
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Datasets & Large Files (GitHub has a 100MB limit)
+# We ignore the heavy raw and processed datasets.
+# Anyone cloning this repo can just run `python main_preprocessing.py` to regenerate them!
+data/datasets/
+data/processed/*.npy
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# IDE files
+.vscode/
+.idea/

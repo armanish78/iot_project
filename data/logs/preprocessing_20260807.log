@@ -1,0 +1,60 @@
+2026-08-07 23:08:38,299 [INFO] data.preprocessing.pipeline: Starting preprocessing pipeline...
+2026-08-07 23:08:38,299 [INFO] data.preprocessing.dataset_loader: Loading 10 files from N-BaIoT with sampling rate 0.15...
+2026-08-07 23:08:42,527 [INFO] data.preprocessing.dataset_loader: Loaded 83389 records from N-BaIoT
+2026-08-07 23:08:42,529 [INFO] data.preprocessing.dataset_loader: Loading UNSW-NB15 from /home/nova/Desktop/iot project/data/datasets/unsw_nb15.csv...
+2026-08-07 23:08:42,662 [INFO] data.preprocessing.dataset_loader: Loaded 82332 records from UNSW-NB15
+2026-08-07 23:08:42,663 [INFO] data.preprocessing.dataset_loader: Combining datasets...
+2026-08-07 23:08:42,798 [INFO] data.preprocessing.dataset_loader: Combined dataset: 165721 records (120389 normal, 45332 attack)
+2026-08-07 23:08:44,038 [INFO] data.preprocessing.data_cleaner: Removed 1487 duplicate rows
+2026-08-07 23:08:44,039 [INFO] data.preprocessing.data_cleaner: Dropped irrelevant columns: ['source_ip', 'dest_ip', 'timestamp', 'id', 'attack_cat', 'attack_type']
+2026-08-07 23:08:44,241 [INFO] data.preprocessing.data_cleaner: Handling missing values using strategy: mean
+2026-08-07 23:08:45,965 [INFO] data.preprocessing.data_cleaner: Missing values count: 12908064 -> 0
+2026-08-07 23:08:46,763 [INFO] data.preprocessing.data_cleaner: Fixed data types
+2026-08-07 23:08:47,533 [ERROR] data.preprocessing.data_cleaner: Validation failed: duplicates remain
+2026-08-07 23:08:47,533 [INFO] data.preprocessing.feature_engineer: Starting feature extraction...
+2026-08-07 23:08:47,735 [INFO] data.preprocessing.feature_engineer: Extracted packet size statistics
+2026-08-07 23:08:47,866 [INFO] data.preprocessing.feature_engineer: Extracted flow-based features
+2026-08-07 23:08:48,016 [INFO] data.preprocessing.feature_engineer: Extracted protocol features
+2026-08-07 23:08:48,051 [INFO] data.preprocessing.feature_engineer: Extracted timing features
+2026-08-07 23:08:48,089 [INFO] data.preprocessing.feature_engineer: Feature extraction complete. Total columns: 167
+2026-08-07 23:08:48,248 [INFO] data.preprocessing.feature_scaling: One-hot encoded columns: ['dataset_source', 'protocol', 'service', 'state']
+2026-08-07 23:08:48,768 [INFO] data.preprocessing.feature_scaling: Scaled 162 numeric features using MinMaxScaler
+2026-08-07 23:08:48,769 [INFO] data.preprocessing.class_balancer: Class distribution before SMOTE: {0: 118902, 1: 45332}
+2026-08-07 23:08:56,401 [INFO] data.preprocessing.class_balancer: Class distribution after SMOTE: {0: 118902, 1: 118902}
+2026-08-07 23:08:56,403 [INFO] data.preprocessing.data_splitter: Splitting data into 70.0% Train, 15.0% Val, 15.0% Test...
+2026-08-07 23:08:56,701 [INFO] data.preprocessing.data_splitter: Train set: 166462 samples
+2026-08-07 23:08:56,701 [INFO] data.preprocessing.data_splitter: Validation set: 35671 samples
+2026-08-07 23:08:56,701 [INFO] data.preprocessing.data_splitter: Test set: 35671 samples
+2026-08-07 23:08:56,702 [INFO] data.preprocessing.pipeline: Saving outputs to /home/nova/Desktop/iot project/data/processed...
+2026-08-07 23:09:00,575 [INFO] data.preprocessing.pipeline: All files saved successfully.
+2026-08-07 23:09:00,575 [INFO] data.preprocessing.pipeline: Pipeline completed successfully!
+2026-08-07 23:43:28,570 [INFO] data.preprocessing.pipeline: Starting preprocessing pipeline...
+2026-08-07 23:43:28,570 [INFO] data.preprocessing.dataset_loader: Loading 10 files from N-BaIoT with sampling rate 0.15...
+2026-08-07 23:43:32,995 [INFO] data.preprocessing.dataset_loader: Loaded 83389 records from N-BaIoT
+2026-08-07 23:43:32,996 [INFO] data.preprocessing.dataset_loader: Loading UNSW-NB15 from /home/nova/Desktop/iot project/data/datasets/unsw_nb15.csv...
+2026-08-07 23:43:33,133 [INFO] data.preprocessing.dataset_loader: Loaded 82332 records from UNSW-NB15
+2026-08-07 23:43:33,134 [INFO] data.preprocessing.dataset_loader: Combining datasets...
+2026-08-07 23:43:33,290 [INFO] data.preprocessing.dataset_loader: Combined dataset: 165721 records (120389 normal, 45332 attack)
+2026-08-07 23:43:34,734 [INFO] data.preprocessing.data_cleaner: Removed 1487 duplicate rows
+2026-08-07 23:43:34,735 [INFO] data.preprocessing.data_cleaner: Dropped irrelevant columns: ['source_ip', 'dest_ip', 'timestamp', 'id', 'attack_cat', 'attack_type']
+2026-08-07 23:43:34,955 [INFO] data.preprocessing.data_cleaner: Handling missing values using strategy: mean
+2026-08-07 23:43:37,063 [INFO] data.preprocessing.data_cleaner: Missing values count: 12908064 -> 0
+2026-08-07 23:43:37,936 [INFO] data.preprocessing.data_cleaner: Fixed data types
+2026-08-07 23:43:38,685 [ERROR] data.preprocessing.data_cleaner: Validation failed: duplicates remain
+2026-08-07 23:43:38,685 [INFO] data.preprocessing.feature_engineer: Starting feature extraction...
+2026-08-07 23:43:38,894 [INFO] data.preprocessing.feature_engineer: Extracted packet size statistics
+2026-08-07 23:43:39,170 [INFO] data.preprocessing.feature_engineer: Extracted flow-based features
+2026-08-07 23:43:39,473 [INFO] data.preprocessing.feature_engineer: Extracted protocol features
+2026-08-07 23:43:39,532 [INFO] data.preprocessing.feature_engineer: Extracted timing features
+2026-08-07 23:43:39,596 [INFO] data.preprocessing.feature_engineer: Feature extraction complete. Total columns: 167
+2026-08-07 23:43:39,947 [INFO] data.preprocessing.feature_scaling: One-hot encoded columns: ['dataset_source', 'protocol', 'service', 'state']
+2026-08-07 23:43:40,544 [INFO] data.preprocessing.feature_scaling: Scaled 162 numeric features using MinMaxScaler
+2026-08-07 23:43:40,545 [INFO] data.preprocessing.data_splitter: Splitting data into 70.0% Train, 15.0% Val, 15.0% Test...
+2026-08-07 23:43:40,975 [INFO] data.preprocessing.data_splitter: Train set: 114963 samples
+2026-08-07 23:43:40,975 [INFO] data.preprocessing.data_splitter: Validation set: 24635 samples
+2026-08-07 23:43:40,975 [INFO] data.preprocessing.data_splitter: Test set: 24636 samples
+2026-08-07 23:43:41,019 [INFO] data.preprocessing.class_balancer: Class distribution before SMOTE: {0: 83231, 1: 31732}
+2026-08-07 23:43:44,558 [INFO] data.preprocessing.class_balancer: Class distribution after SMOTE: {0: 83231, 1: 83231}
+2026-08-07 23:43:44,561 [INFO] data.preprocessing.pipeline: Saving outputs to /home/nova/Desktop/iot project/data/processed...
+2026-08-07 23:43:50,685 [INFO] data.preprocessing.pipeline: All files saved successfully.
+2026-08-07 23:43:50,686 [INFO] data.preprocessing.pipeline: Pipeline completed successfully!
