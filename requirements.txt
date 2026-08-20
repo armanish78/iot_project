@@ -1,7 +1,6 @@
-pandas
 numpy
+pandas
 scikit-learn
-imbalanced-learn
-scipy
-shap
-matplotlib
+flask
+flask-cors
+flask-sqlalchemy
