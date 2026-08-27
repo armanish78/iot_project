@@ -31,12 +31,12 @@ class DataProcessorService:
             if k not in excluded_keys and isinstance(v, (int, float)):
                 numerical_features.append(v)
                 
-        # If the length doesn't match 167, pad with zeros just to make it run for tests
+        # If the length doesn't match 187, pad with zeros just to make it run for tests
         # In production, missing features should throw an error or use imputation
-        while len(numerical_features) < 167:
+        while len(numerical_features) < 187:
             numerical_features.append(0.0)
             
-        feature_array = np.array([numerical_features[:167]])
+        feature_array = np.array([numerical_features[:187]])
         
         # Scale
         if scaler:

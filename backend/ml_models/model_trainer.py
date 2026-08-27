@@ -77,7 +77,7 @@ def load_processed_data() -> tuple:
     )
 
 
-def save_models(rf_model, if_model, feature_names):
+def save_models(rf_model, if_model, feature_names, top_indices):
     """Save trained models as .pkl files"""
     os.makedirs(MODELS_DIR, exist_ok=True)
 
@@ -92,6 +92,7 @@ def save_models(rf_model, if_model, feature_names):
             {
                 "features": feature_names,
                 "num_features": len(feature_names),
+                "if_top_indices": top_indices.tolist() if top_indices is not None else [],
                 "model_version": "1.0",
             },
             f,
@@ -129,17 +130,28 @@ def train_and_evaluate():
     logger.info("Initiating Hyperparameter Tuning Phase...")
     rf = train_random_forest_with_gridsearch(X_train, y_train)
 
-    if_model = tune_isolation_forest(X_train_normal, X_test_if, y_test_if)
+    # Feature Selection for IF: Solve the curse of dimensionality
+    importances = rf.feature_importances_
+    # Get top 15 most important features
+    top_indices = np.argsort(importances)[::-1][:15]
+    logger.info(f"Selected Top 15 features for IF: {[feature_names[i] for i in top_indices]}")
+    
+    # Subset the datasets for IF
+    X_train_normal_if = X_train_normal[:, top_indices]
+    X_val_if = X_val[:, top_indices]
+    X_test_if_sub = X_test_if[:, top_indices]
+
+    if_model = tune_isolation_forest(X_train_normal_if, X_val_if, y_val)
 
     # 3. Save Models
-    save_models(rf, if_model, feature_names)
+    save_models(rf, if_model, feature_names, top_indices)
 
     # 4. Evaluate Models
     logger.info("Evaluating models on test data...")
     rf_preds, rf_probs = predict_with_rf(rf, X_test)
     rf_metrics = evaluate_model(y_test, rf_preds, rf_probs)
 
-    if_preds, _ = predict_anomalies(if_model, X_test_if)
+    if_preds, _ = predict_anomalies(if_model, X_test_if_sub)
     # IF returns -1 (anomaly), 1 (normal). Convert to 1 (attack), 0 (normal) for evaluation
     if_preds_binary = np.where(if_preds == -1, 1, 0)
     if_metrics = evaluate_model(y_test_if, if_preds_binary)
@@ -159,7 +171,7 @@ def train_and_evaluate():
         sample = X_test[i].reshape(1, -1)
         # Use hybrid pipeline
         pred_result = hybrid_predict(
-            rf, if_model, explainer, sample, feature_names
+            rf, if_model, explainer, sample, feature_names, top_indices
         )
 
         pred_result["sample_id"] = i

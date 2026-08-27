@@ -1,1 +1,0 @@
-The goal is to finalize the setup of the IoT datasets (N-BaIoT and UNSW-NB15), install the necessary Python dependencies, and run the main data preprocessing pipeline

@@ -10,9 +10,11 @@ from backend.services.database_service import db_service
 class ThreatDetectionService:
     def __init__(self):
         """Load models at startup"""
+        import json
         self.rf_model = None
         self.if_model = None
         self.scaler = None
+        self.if_top_indices = None
         
         try:
             if os.path.exists(Config.RANDOM_FOREST_MODEL):
@@ -27,6 +29,13 @@ class ThreatDetectionService:
                 with open(Config.FEATURE_SCALER, 'rb') as f:
                     self.scaler = pickle.load(f)
                     
+            feature_names_path = os.path.join(os.path.dirname(Config.RANDOM_FOREST_MODEL), "feature_names.json")
+            if os.path.exists(feature_names_path):
+                with open(feature_names_path, 'r') as f:
+                    data = json.load(f)
+                    if "if_top_indices" in data and data["if_top_indices"]:
+                        self.if_top_indices = data["if_top_indices"]
+                        
             logger_service.logger.info("Models loaded successfully")
         except Exception as e:
             logger_service.log_error(e, {"context": "Model loading in ThreatDetectionService"})
@@ -57,7 +66,10 @@ class ThreatDetectionService:
                     confidence = 0.95
                     
             if self.if_model:
-                if_prediction = int(self.if_model.predict(scaled_features)[0])
+                scaled_features_if = scaled_features
+                if self.if_top_indices is not None:
+                    scaled_features_if = scaled_features[:, self.if_top_indices]
+                if_prediction = int(self.if_model.predict(scaled_features_if)[0])
                 
             # Logic: If RF predicts 1 (attack) OR IF predicts -1 (anomaly), it's a threat
             if rf_prediction == 1 or if_prediction == -1:

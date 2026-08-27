@@ -33,7 +33,7 @@ def ensemble_voting(rf_pred: int, if_pred: int, rf_confidence: float) -> tuple:
 
 
 def hybrid_predict(
-    rf_model, if_model, shap_explainer, X_sample, feature_names
+    rf_model, if_model, shap_explainer, X_sample, feature_names, if_top_indices=None
 ) -> dict:
     """
     Make prediction using both models
@@ -45,7 +45,12 @@ def hybrid_predict(
     rf_conf = float(rf_model.predict_proba(X_sample)[0, 1])
 
     # 2. Get IF prediction
-    if_pred = int(if_model.predict(X_sample)[0])
+    if if_top_indices is not None:
+        X_sample_if = X_sample[:, if_top_indices]
+    else:
+        X_sample_if = X_sample
+
+    if_pred = int(if_model.predict(X_sample_if)[0])
 
     # 3. Decision logic
     is_threat, confidence, threat_type = ensemble_voting(

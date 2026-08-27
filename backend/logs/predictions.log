@@ -1,3 +1,12 @@
 2026-08-20 14:07:22,584 - iot_security - INFO - Models loaded successfully
 2026-08-20 14:07:23,535 - iot_security - INFO - Models loaded successfully
 2026-08-20 14:07:49,810 - iot_security - INFO - Models loaded successfully
+2026-08-20 14:16:54,247 - iot_security - INFO - Models loaded successfully
+2026-08-27 14:49:26,746 - iot_security - INFO - Models loaded successfully
+2026-08-27 14:49:27,614 - iot_security - INFO - Models loaded successfully
+2026-08-27 15:05:19,125 - iot_security - ERROR - Error occurred: X has 167 features, but RandomForestClassifier is expecting 187 features as input., Context: {'context': 'Prediction making'}
+2026-08-27 15:05:19,125 - iot_security - ERROR - Error occurred: X has 167 features, but RandomForestClassifier is expecting 187 features as input., Context: {'context': 'API detect_threat'}
+2026-08-27 15:05:30,641 - iot_security - INFO - Models loaded successfully
+2026-08-27 15:05:58,530 - iot_security - INFO - Prediction made: {'threat': False, 'confidence': 0.79, 'threat_type': 'none', 'explanation': 'Normal traffic pattern', 'rf_prediction': 0, 'if_prediction': 1, 'source_ip': '192.168.1.5', 'dest_ip': '10.0.0.1', 'timestamp': '2026-08-27T09:35:58.530593', 'request_id': '89619f7e-5c27-4a1b-8244-d23ade05a50f'}
+2026-08-27 15:08:32,381 - iot_security - INFO - Prediction made: {'threat': False, 'confidence': 0.79, 'threat_type': 'none', 'explanation': 'Normal traffic pattern', 'rf_prediction': 0, 'if_prediction': 1, 'source_ip': '192.168.1.5', 'dest_ip': '10.0.0.1', 'timestamp': '2026-08-27T09:38:32.381582', 'request_id': '9dd3df87-8f3f-44bf-b12e-6fba9b80d143'}
+2026-08-27 15:09:36,910 - iot_security - INFO - Prediction made: {'threat': False, 'confidence': 0.79, 'threat_type': 'none', 'explanation': 'Normal traffic pattern', 'rf_prediction': 0, 'if_prediction': 1, 'source_ip': '192.168.1.5', 'dest_ip': '10.0.0.1', 'timestamp': '2026-08-27T09:39:36.909967', 'request_id': '874c5309-4426-465c-8668-e26b4b645a6b'}

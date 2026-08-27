@@ -35,33 +35,44 @@ def tune_isolation_forest(X_train_normal, X_val, y_val) -> IsolationForest:
     best_model = None
     best_params = {}
 
-    contaminations = [0.001, 0.01, 0.05, 0.1]
-    n_estimators_list = [100, 150]
+    # Significantly expanded grid to target >85% precision/recall
+    contaminations = [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4]
+    n_estimators_list = [100, 200]
+    max_samples_list = ['auto', 256, 512, 1024]
+    max_features_list = [1.0, 0.8, 0.5]
 
     logger.info("Starting custom Grid Search for Isolation Forest...")
 
     for c in contaminations:
         for n in n_estimators_list:
-            logger.info(f"Testing IF -> contamination: {c}, n_estimators: {n}")
-            model = IsolationForest(
-                contamination=c, n_estimators=n, random_state=42, n_jobs=-1
-            )
-            model.fit(X_train_normal)  # Train purely on normal traffic
+            for ms in max_samples_list:
+                for mf in max_features_list:
+                    # Skip some combinations to save time if needed, but we want the best score
+                    model = IsolationForest(
+                        contamination=c, 
+                        n_estimators=n, 
+                        max_samples=ms,
+                        max_features=mf,
+                        random_state=42, 
+                        n_jobs=-1
+                    )
+                    model.fit(X_train_normal)  # Train purely on normal traffic
 
-            # Evaluate on validation set
-            preds = model.predict(X_val)
-            # IF output: -1 (anomaly/attack), 1 (normal). Convert to 1 (attack), 0 (normal)
-            preds_binary = np.where(preds == -1, 1, 0)
+                    # Evaluate on validation set
+                    preds = model.predict(X_val)
+                    # IF output: -1 (anomaly/attack), 1 (normal). Convert to 1 (attack), 0 (normal)
+                    preds_binary = np.where(preds == -1, 1, 0)
 
-            score = f1_score(y_val, preds_binary, zero_division=0)
+                    score = f1_score(y_val, preds_binary, zero_division=0)
 
-            if score > best_f1:
-                best_f1 = score
-                best_model = model
-                best_params = {"contamination": c, "n_estimators": n}
+                    if score > best_f1:
+                        best_f1 = score
+                        best_model = model
+                        best_params = {"contamination": c, "n_estimators": n, "max_samples": ms, "max_features": mf}
+                        logger.info(f"New Best IF Params found: {best_params} (Val F1: {best_f1:.4f})")
 
     logger.info(
-        f"Isolation Forest Best Params found: {best_params} (Val F1: {best_f1:.4f})"
+        f"Isolation Forest Final Best Params: {best_params} (Val F1: {best_f1:.4f})"
     )
     return best_model
 

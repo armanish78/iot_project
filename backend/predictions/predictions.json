@@ -38,10 +38,10 @@
         },
         {
             "threat": true,
-            "confidence": 0.9471584081994607,
+            "confidence": 0.95,
             "threat_type": "known_attack",
             "rf_prediction": 1,
-            "if_prediction": 1,
+            "if_prediction": -1,
             "explanation": "Connection flagged as ATTACK with 94.7% confidence because: dttl (increased threat score), ct_srv_dst (increased threat score), packet_size_min (increased threat score)",
             "sample_id": 4
         }
