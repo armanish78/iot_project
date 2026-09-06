@@ -38,10 +38,10 @@ def get_confusion_matrix(y_true, y_pred):
 
 
 def generate_evaluation_report(
-    rf_metrics: dict, if_metrics: dict, output_path: str
+    rf_metrics: dict, if_metrics: dict, hybrid_metrics: dict, output_path: str
 ):
     """Save evaluation report as JSON"""
-    report = {"random_forest": rf_metrics, "isolation_forest": if_metrics}
+    report = {"random_forest": rf_metrics, "isolation_forest": if_metrics, "hybrid_model": hybrid_metrics}
 
     with open(output_path, "w") as f:
         json.dump(report, f, indent=4)

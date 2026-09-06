@@ -2,47 +2,117 @@
     "predictions": [
         {
             "threat": false,
-            "confidence": 0.9999928296141133,
+            "confidence": 0.7,
             "threat_type": "normal",
             "rf_prediction": 0,
             "if_prediction": 1,
             "explanation": "Connection flagged as NORMAL with 0.0% confidence because: packet_size_min (decreased threat score), dload (decreased threat score), dataset_source_nbiot (decreased threat score)",
+            "top_features": [
+                {
+                    "feature": "packet_size_min",
+                    "contribution": -0.06327610493688705
+                },
+                {
+                    "feature": "dload",
+                    "contribution": -0.035742589524562524
+                },
+                {
+                    "feature": "dataset_source_nbiot",
+                    "contribution": -0.023144226398793943
+                }
+            ],
             "sample_id": 0
         },
         {
             "threat": false,
-            "confidence": 0.9998692291263624,
+            "confidence": 0.7,
             "threat_type": "normal",
             "rf_prediction": 0,
             "if_prediction": 1,
             "explanation": "Connection flagged as NORMAL with 0.0% confidence because: packet_size_min (decreased threat score), dload (decreased threat score), dataset_source_nbiot (decreased threat score)",
+            "top_features": [
+                {
+                    "feature": "packet_size_min",
+                    "contribution": -0.06320314367484033
+                },
+                {
+                    "feature": "dload",
+                    "contribution": -0.035742589524562524
+                },
+                {
+                    "feature": "dataset_source_nbiot",
+                    "contribution": -0.023144226398793943
+                }
+            ],
             "sample_id": 1
         },
         {
             "threat": false,
-            "confidence": 0.9999928296141133,
+            "confidence": 0.7,
             "threat_type": "normal",
             "rf_prediction": 0,
             "if_prediction": 1,
             "explanation": "Connection flagged as NORMAL with 0.0% confidence because: packet_size_min (decreased threat score), dload (decreased threat score), dataset_source_nbiot (decreased threat score)",
+            "top_features": [
+                {
+                    "feature": "packet_size_min",
+                    "contribution": -0.06320373963987495
+                },
+                {
+                    "feature": "dload",
+                    "contribution": -0.035742589524562524
+                },
+                {
+                    "feature": "dataset_source_nbiot",
+                    "contribution": -0.023144226398793943
+                }
+            ],
             "sample_id": 2
         },
         {
             "threat": false,
-            "confidence": 0.9999928296141133,
+            "confidence": 0.7,
             "threat_type": "normal",
             "rf_prediction": 0,
             "if_prediction": 1,
             "explanation": "Connection flagged as NORMAL with 0.0% confidence because: packet_size_min (decreased threat score), dload (decreased threat score), dataset_source_nbiot (decreased threat score)",
+            "top_features": [
+                {
+                    "feature": "packet_size_min",
+                    "contribution": -0.06320373963987495
+                },
+                {
+                    "feature": "dload",
+                    "contribution": -0.035742589524562524
+                },
+                {
+                    "feature": "dataset_source_nbiot",
+                    "contribution": -0.023144226398793943
+                }
+            ],
             "sample_id": 3
         },
         {
             "threat": true,
-            "confidence": 0.95,
+            "confidence": 0.9474059011688121,
             "threat_type": "known_attack",
             "rf_prediction": 1,
             "if_prediction": -1,
             "explanation": "Connection flagged as ATTACK with 94.7% confidence because: dttl (increased threat score), ct_srv_dst (increased threat score), packet_size_min (increased threat score)",
+            "top_features": [
+                {
+                    "feature": "dttl",
+                    "contribution": 0.06716377378549643
+                },
+                {
+                    "feature": "ct_srv_dst",
+                    "contribution": 0.026478508656311354
+                },
+                {
+                    "feature": "packet_size_min",
+                    "contribution": 0.0245129983018884
+                }
+            ],
             "sample_id": 4
         }
     ]

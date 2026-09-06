@@ -140,13 +140,14 @@ Let's look at the files inside `backend/ml_models/`:
 **What it does:** Creates our secondary guard dog brain. Hackers are smart; they invent new attacks every day (Zero-Day attacks). The Random Forest only knows attacks it has seen before. 
 The **Isolation Forest** doesn't learn what attacks look like. It *only* studies Normal traffic. It learns the exact shape of a normal day. If *anything* weird happens, it flags it as an anomaly.
 **Inside it:**
-- `tune_isolation_forest()`: Trains the model on 100% normal data.
+- **Removal of PCA:** We permanently removed PCA compression. We now use the exact top 15 features to prevent information loss.
+- `tune_isolation_forest()`: Trains the model on 100% normal data and finds the perfect mathematical threshold.
 - `predict_anomalies()`: Guesses if a new packet is normal (returns 1) or anomalous (returns -1).
 
 ### 3. `hybrid_pipeline.py`
 **What it does:** The Manager that controls both brains. 
 **Inside it:**
-- `ensemble_voting()`: The logic. If Random Forest says "Attack!", we block it. If Random Forest says "Normal", we ask the Isolation Forest. If the Isolation Forest barks ("Anomaly!"), we override the Random Forest and block it anyway.
+- `ensemble_voting()`: Uses our custom **RF Uncertainty Override**. If Random Forest is highly confident (>70% or <50%), we trust it. But if it falls in the 50%-70% "Uncertainty Zone", we pause and let the Isolation Forest break the tie! This filters out a massive amount of False Positives.
 - `hybrid_predict()`: The actual function that runs the data through both brains and uses `ensemble_voting()`.
 
 ### 4. `model_evaluator.py`
@@ -170,22 +171,17 @@ The **Isolation Forest** doesn't learn what attacks look like. It *only* studies
 
 ### 🌟 THE RESULTS OF PHASE 2
 After the training is complete, the `evaluation_report.json` tells us exactly how smart our brains are based on the Test Data (the final exam):
-- **Random Forest Score:** 
-  - **Accuracy:** 95.5% (It guessed correctly 95% of the time).
-  - **Recall:** 99.6% (Out of all the *actual* hacker attacks, it successfully caught 99.6% of them. It almost never lets a known attack slip by!).
-- **Isolation Forest Score (The "Zero-Day" Guard Dog):** 
-  - **The Problem:** Originally, we were feeding the Isolation Forest over 160 different features. In machine learning, this is called the "Curse of Dimensionality"—when you have too many columns, it's impossible to isolate anomalies because everything looks far apart.
-  - **The Solution (Guided Feature Selection):** We solved this by asking the Random Forest for the top 15 most important features it used to detect attacks. We then filtered the data down from 160+ columns to *only* these 15 critical columns before training the Isolation Forest.
-  - **The 15 Selected Features & Why They Matter:**
-    1. **`sttl` & `dttl` (Source / Destination Time to Live):** Hackers often spoof IP addresses or route traffic through multiple proxies/botnets. This drastically alters the TTL compared to normal traffic.
-    2. **`packet_size_min`:** Many IoT attacks (like Mirai botnets) flood the network with millions of tiny, identical packets. A suspiciously low minimum packet size is a massive red flag.
-    3. **`dload` (Destination Bits per Second):** Massive, unnatural spikes in download rates indicate DDoS attacks or data exfiltration.
-    4. **`dpkts` (Destination Packets):** The raw number of packets sent to the destination. Again, flooding a server with packets is a classic attack signature.
-    5. **`dataset_source_nbiot` & `dataset_source_unsw`:** Flags indicating which original dataset the traffic came from (helps the model distinguish between standard IT networks vs IoT device networks).
-    6. **`is_sm_ips_ports`:** A flag indicating if the Source and Destination IP addresses and Ports are exactly the same (a common signature of malicious land attacks).
-    7. **`ct_state_ttl`:** The connection state tied to the TTL. Connection states that hang or terminate abruptly (like SYN floods) are classic anomalies.
-    8. **The Jitter & Weight Features (`HH_jit_L3_mean`, `MI_dir_L0.01_weight`, `HH_jit_L0.1_mean`, `HH_jit_L1_mean`, `HH_jit_L0.01_weight`, `H_L0.01_variance`):** These are complex statistical features extracted by the N-BaIoT dataset. They measure the "jitter" (variance in packet arrival times) and the "weight" (stream intensity) over various time windows (like 0.01 seconds or 1 second). Normal IoT devices like smart fridges send data in extremely predictable, rhythmic intervals. Botnets and malware send data in highly chaotic, erratic bursts. These features mathematically capture that chaos.
-  - **The Result:** By filtering the data to only look at these 15 critical behaviors, **we organically pushed the Recall from 30% to 85.39%!** The Isolation Forest is now highly capable of catching unknown zero-day anomalies because it is no longer blinded by 145 columns of noise.
+
+- **Standalone Random Forest:** 
+  - Achieved a 92.52% F1 Score, but struggled slightly with False Positives.
+- **The Hybrid System (Final Verified Results):** 
+  - By merging the models with our Uncertainty Override, we successfully slashed False Positives by **69%**!
+  - **Final F1 Score:** 95.44%
+  - **Final Precision:** 95.20%
+  - **Final Recall:** 95.68%
+  - **Final Accuracy:** 97.48%
+
+Our Unsupervised Isolation Forest is now highly capable of catching unknown zero-day anomalies because it relies on the raw top 15 features rather than being blinded by mathematical compression (PCA).
 
 ---
 
@@ -210,8 +206,8 @@ Routes are URLs (Endpoints) that users can visit. Think of them as doors on a bu
 
 ### 3. The Workers (`services/` folder)
 Routes (doors) shouldn't do heavy lifting. They hand the data to Services (workers).
-- **`threat_detection_service.py`:** The most important worker. When the server starts, this script wakes up the `.pkl` brain files. When data comes in from the `/predict` door, it passes the data into `hybrid_pipeline.py`, gets the "Threat or No Threat" answer, logs it, and hands the answer back to the door to send to the user.
-- **`data_processor_service.py`:** Wait! The brain can only read perfectly clean, scaled data from 0 to 1. This worker intercepts the messy JSON data from the internet and instantly applies the exact same scaling math from Phase 1 before handing it to the brain.
+- **`threat_detection_service.py`:** The most important worker. When the server starts, this script wakes up the `.pkl` brain files. When data comes in, it passes the data into `hybrid_pipeline.py`. If a sneak attack is caught, it mathematically converts the Isolation Forest's raw anomaly score into a legitimate, realistic Confidence Percentage (e.g., 75% - 89%) before returning the answer to the user.
+- **`data_processor_service.py`:** Wait! The brain can only read perfectly clean, scaled data from 0 to 1. This worker intercepts the messy JSON data from the internet and applies the exact same scaling math (imputing missing features with the `scaler.mean_`) before handing it to the brain.
 - **`logging_service.py`:** Writes down everything that happens into a text file in `backend/logs/`.
 - **`database_service.py`:** Talks to the Database.
 

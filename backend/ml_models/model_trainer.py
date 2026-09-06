@@ -77,7 +77,7 @@ def load_processed_data() -> tuple:
     )
 
 
-def save_models(rf_model, if_model, feature_names, top_indices):
+def save_models(rf_model, if_model, feature_names, top_indices, if_threshold=0.0):
     """Save trained models as .pkl files"""
     os.makedirs(MODELS_DIR, exist_ok=True)
 
@@ -93,19 +93,17 @@ def save_models(rf_model, if_model, feature_names, top_indices):
                 "features": feature_names,
                 "num_features": len(feature_names),
                 "if_top_indices": top_indices.tolist() if top_indices is not None else [],
+                "if_threshold": float(if_threshold),
                 "model_version": "1.0",
             },
             f,
             indent=4,
         )
 
-    # We didn't create a scaler here because scaling was done in Part 1 and
-    # we don't have the scaler object. In a production system, Part 1 should
-    # save its scaler object, or we train a new one here.
-    # For now, we will assume Part 1 scaled the data statically or we will just save a dummy.
-    # We'll touch an empty scaler.pkl to satisfy requirements.
-    with open(MODELS_DIR / "scaler.pkl", "wb") as f:
-        pickle.dump("SCALER_PLACEHOLDER", f)
+    # Scaler is now correctly created in Part 1 and saved to PROCESSED_DIR
+    if os.path.exists(PROCESSED_DIR / "scaler.pkl"):
+        import shutil
+        shutil.copy2(PROCESSED_DIR / "scaler.pkl", MODELS_DIR / "scaler.pkl")
 
     logger.info(f"Saved models to {MODELS_DIR}")
 
@@ -141,24 +139,44 @@ def train_and_evaluate():
     X_val_if = X_val[:, top_indices]
     X_test_if_sub = X_test_if[:, top_indices]
 
-    if_model = tune_isolation_forest(X_train_normal_if, X_val_if, y_val)
+    if_model, best_thresh = tune_isolation_forest(X_train_normal_if, X_val_if, y_val)
 
     # 3. Save Models
-    save_models(rf, if_model, feature_names, top_indices)
+    save_models(rf, if_model, feature_names, top_indices, best_thresh)
 
     # 4. Evaluate Models
     logger.info("Evaluating models on test data...")
     rf_preds, rf_probs = predict_with_rf(rf, X_test)
     rf_metrics = evaluate_model(y_test, rf_preds, rf_probs)
 
-    if_preds, _ = predict_anomalies(if_model, X_test_if_sub)
-    # IF returns -1 (anomaly), 1 (normal). Convert to 1 (attack), 0 (normal) for evaluation
-    if_preds_binary = np.where(if_preds == -1, 1, 0)
+    # Use decision_function and best_thresh instead of predict()
+    if_scores = if_model.decision_function(X_test_if_sub)
+    if_preds_binary = (if_scores < best_thresh).astype(int)
     if_metrics = evaluate_model(y_test_if, if_preds_binary)
+
+    # Evaluate Hybrid Model on Full Test Set
+    if_scores_full = if_model.decision_function(X_test[:, top_indices])
+    if_preds_full = (if_scores_full < best_thresh).astype(int)
+    
+    hybrid_preds = np.zeros_like(rf_preds)
+    for i in range(len(y_test)):
+        rf_conf = rf_probs[i]
+        if rf_conf >= 0.70 or rf_conf <= 0.50:
+            hybrid_preds[i] = rf_preds[i]
+        else:
+            hybrid_preds[i] = if_preds_full[i]
+            
+    hybrid_metrics = evaluate_model(y_test, hybrid_preds)
+    
+    # Store confusion matrices
+    from backend.ml_models.model_evaluator import get_confusion_matrix
+    rf_metrics['confusion_matrix'] = get_confusion_matrix(y_test, rf_preds)
+    if_metrics['confusion_matrix'] = get_confusion_matrix(y_test_if, if_preds_binary)
+    hybrid_metrics['confusion_matrix'] = get_confusion_matrix(y_test, hybrid_preds)
 
     os.makedirs(PREDICTIONS_DIR, exist_ok=True)
     report_path = PREDICTIONS_DIR / "evaluation_report.json"
-    generate_evaluation_report(rf_metrics, if_metrics, report_path)
+    generate_evaluation_report(rf_metrics, if_metrics, hybrid_metrics, report_path)
 
     # 5. SHAP and Sample Predictions
     logger.info("Generating SHAP explainer and sample predictions...")
@@ -171,7 +189,7 @@ def train_and_evaluate():
         sample = X_test[i].reshape(1, -1)
         # Use hybrid pipeline
         pred_result = hybrid_predict(
-            rf, if_model, explainer, sample, feature_names, top_indices
+            rf, if_model, explainer, sample, feature_names, top_indices, best_thresh
         )
 
         pred_result["sample_id"] = i

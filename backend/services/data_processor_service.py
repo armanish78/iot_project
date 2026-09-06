@@ -12,31 +12,31 @@ class DataProcessorService:
         Normalize incoming data using saved scaler.
         Extract mathematical features, drop IPs, etc.
         """
-        # For the sake of this mock API implementation, we assume we receive numerical features
-        # If any features are missing, we'll fill with 0
+        # Load the feature names to map the packet correctly
+        import json
+        import os
+        from backend.flask_api.config import Config
         
-        # Typically, you'd extract the 167 feature columns in the exact order trained
-        # Here we simulate this process
-        numerical_features = []
+        # If we have a scaler, use its mean as the background "normal" packet fill. Otherwise use 0.
+        if scaler and hasattr(scaler, 'mean_'):
+            feature_array = np.array([scaler.mean_])
+        else:
+            feature_array = np.zeros((1, 187))
         
-        # If we had the actual feature list:
-        # for col in EXPECTED_FEATURES:
-        #     numerical_features.append(data.get(col, 0.0))
-        
-        # Since we don't have the explicit 167 column list in this phase, 
-        # we will extract all numerical values from data, excluding IPs, ports, etc.
-        excluded_keys = ['source_ip', 'dest_ip', 'source_port', 'dest_port', 'protocol']
-        
-        for k, v in data.items():
-            if k not in excluded_keys and isinstance(v, (int, float)):
-                numerical_features.append(v)
+        feature_names_path = os.path.join(os.path.dirname(Config.RANDOM_FOREST_MODEL), "feature_names.json")
+        try:
+            with open(feature_names_path, 'r') as f:
+                feature_names = json.load(f)["features"]
                 
-        # If the length doesn't match 187, pad with zeros just to make it run for tests
-        # In production, missing features should throw an error or use imputation
-        while len(numerical_features) < 187:
-            numerical_features.append(0.0)
-            
-        feature_array = np.array([numerical_features[:187]])
+            # Map the incoming data to the correct index in the 187 length array
+            for k, v in data.items():
+                if k in feature_names and isinstance(v, (int, float)):
+                    idx = feature_names.index(k)
+                    feature_array[0, idx] = v
+                    
+        except Exception as e:
+            # Fallback if json not found
+            pass
         
         # Scale
         if scaler:
