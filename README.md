@@ -4,7 +4,7 @@
 ![Python](https://img.shields.io/badge/Python-3.11%2B-blue)
 ![Machine Learning](https://img.shields.io/badge/Machine%20Learning-Scikit--Learn-orange)
 
-An advanced Artificial Intelligence system designed to protect Internet of Things (IoT) devices from botnet infections (like Mirai) using mathematical network traffic analysis. 
+An advanced Artificial Intelligence system designed to protect Internet of Things (IoT) devices from botnet infections (like Mirai) using mathematical network traffic analysis. We have successfully implemented a way to monitor IoT network devices.
 
 This repository contains the complete **Data Preprocessing Pipeline** and **Machine Learning Training Engine**.
 

@@ -55,6 +55,17 @@ While the server is still running, you can prove that the API is actively scanni
 
 **What to say:** *"I just ran a script to send a live, suspicious network packet to the API. As you can see printed in the terminal, it instantly ran through the models, generated a confidence score, and returned a full JSON threat analysis report."*
 
+## Step 6: Show the React Frontend Interface
+While the backend server is running in the first terminal, open a **third terminal window** to start the frontend dashboard.
+Run these commands:
+```bash
+cd frontend
+npm run dev
+```
+**What to say:** *"Now I will show you the user interface. We built a React-based frontend dashboard that connects directly to the Flask API. Here you can see the live system status, a dashboard with active network scans, and a dedicated Alerts page for any threats the ML engine blocked. You can also run a live 167-feature prediction test right from the UI to see the Hybrid engine in action, completely visually."*
+
+Open your browser and navigate to the URL provided in the terminal (usually `http://localhost:5173`).
+
 ## Advice & Things to Keep in Mind
 - **The Hybrid Pipeline is the star:** Make sure you emphasize `backend/ml_models/hybrid_pipeline.py`. It's not just a standard ML project. Explain the **RF Uncertainty Override**: If the Random Forest is highly confident (e.g. 90%), we trust it. But if the Random Forest is confused (between 50% and 70% confidence), we trigger the Isolation Forest anomaly score to break the tie. This veto system slashed our false positive rate by 69%!
 - **Explainability (SHAP):** Mention `shap_explainer.py`. Explain that the system doesn't just block packets blindly; it calculates the SHAP values to explain *why* it blocked a packet (e.g., "Packet size was too large"). 
