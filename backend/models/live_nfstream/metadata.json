@@ -1,0 +1,14 @@
+{
+    "model_type": "xgboost_binary_nfstream",
+    "threshold": 0.5,
+    "classes": [
+        "BENIGN",
+        "PortScan"
+    ],
+    "metrics": {
+        "accuracy": 0.9979397314858838,
+        "precision": 0.9999089349947637,
+        "recall": 0.9959635967829715,
+        "fpr": 9.041727572748233e-05
+    }
+}

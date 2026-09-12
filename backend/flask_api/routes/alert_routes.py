@@ -10,8 +10,10 @@ def get_alerts():
     GET /api/alerts
     """
     try:
-        alerts = db_service.get_active_alerts()
-        return jsonify({"alerts": alerts}), 200
+        limit = request.args.get('limit', default=20, type=int)
+        alerts = db_service.get_alerts(limit=limit)
+        stats = db_service.get_alert_stats()
+        return jsonify({"alerts": alerts, "stats": stats}), 200
     except Exception as e:
         logger_service.log_error(e, {"context": "API get_alerts"})
         return jsonify({"error": "Internal server error"}), 500

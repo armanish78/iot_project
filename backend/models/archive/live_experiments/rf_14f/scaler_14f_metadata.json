@@ -1,0 +1,21 @@
+{
+    "scaler_feature_count": 14,
+    "feature_order": [
+        "spkts",
+        "dpkts",
+        "sbytes",
+        "dbytes",
+        "dur",
+        "smean",
+        "dmean",
+        "rate",
+        "sload",
+        "dload",
+        "proto_tcp",
+        "proto_udp",
+        "proto_icmp",
+        "proto_other"
+    ],
+    "training_data": "benchmark_data/X_train.npy (inversely transformed, sliced to 14 columns, refit)",
+    "notes": "Original scaler was incorrectly fitted on 16 features. Corrected scaler was fitted exactly on 14 features of candidate's training data for deployment compatibility."
+}

@@ -38,11 +38,15 @@ def create_app(config_name: str = 'development') -> Flask:
     from backend.flask_api.routes.alert_routes import alert_bp
     from backend.flask_api.routes.dashboard_routes import dashboard_bp
     from backend.flask_api.routes.log_routes import log_bp
+    from backend.flask_api.routes.live_routes import live_bp
+    from backend.flask_api.routes.device_routes import device_bp
     
     app.register_blueprint(health_bp)
     app.register_blueprint(prediction_bp)
     app.register_blueprint(alert_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(log_bp)
+    app.register_blueprint(live_bp)
+    app.register_blueprint(device_bp)
     
     return app

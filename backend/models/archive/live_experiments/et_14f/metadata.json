@@ -1,0 +1,10 @@
+{
+  "model_type": "ExtraTrees",
+  "params": {
+    "max_depth": 20,
+    "min_samples_leaf": 5,
+    "n_estimators": 100,
+    "random_state": 42
+  },
+  "trained_at": "2026-09-11T16:06:14.972306"
+}

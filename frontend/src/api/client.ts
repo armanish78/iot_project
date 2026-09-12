@@ -12,7 +12,14 @@ const client = axios.create({
 export const getHealth = () => client.get('/health/status');
 export const getDashboardStats = () => client.get('/dashboard/stats');
 export const getDashboardActivity = (limit = 50) => client.get(`/dashboard/activity?limit=${limit}`);
-export const getAlerts = () => client.get('/alerts/');
+export const getAlerts = (limit = 20) => client.get(`/alerts/?limit=${limit}`);
 export const runPrediction = (packet: any) => client.post('/predictions/detect', packet);
+
+// Live Monitoring Endpoints
+export const getLiveStatus = () => client.get('/live/status');
+export const getLiveDevices = () => client.get('/live/devices');
+export const startLiveCapture = (interfaceName: string) => client.post('/live/start', { interface: interfaceName });
+export const stopLiveCapture = () => client.post('/live/stop');
+export const runLiveSimulation = (config: any) => client.post('/live/simulate', config);
 
 export default client;

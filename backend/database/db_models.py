@@ -19,6 +19,7 @@ class Prediction(db.Model):
     explanation = db.Column(db.Text)
     rf_prediction = db.Column(db.Integer)
     if_prediction = db.Column(db.Integer)
+    run_id = db.Column(db.String(50), nullable=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     
 class Alert(db.Model):

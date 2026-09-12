@@ -1,6 +1,88 @@
 @import "tailwindcss";
 
+@theme {
+  --color-sentinel-900: #001D39;
+  --color-sentinel-800: #0A4174;
+  --color-sentinel-700: #49769F;
+  --color-sentinel-600: #4E8EA2;
+  --color-sentinel-500: #6EA2B3;
+  --color-sentinel-400: #7BBDE8;
+  --color-sentinel-300: #BDD8E9;
+}
+
 body {
-  background-color: #0f172a; /* slate-900 */
-  color: #f8fafc; /* slate-50 */
+  background-color: var(--color-sentinel-900);
+  color: var(--color-sentinel-300);
+  background-image: radial-gradient(circle at 100% 0%, rgba(10, 65, 116, 0.5) 0%, transparent 35%),
+                    radial-gradient(circle at 0% 100%, rgba(10, 65, 116, 0.4) 0%, transparent 40%);
+  background-attachment: fixed;
+  margin: 0;
+  min-height: 100vh;
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+  background: rgba(10, 65, 116, 0.25);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(73, 118, 159, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  border-radius: 1.25rem;
+}
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(10, 65, 116, 0.3) 0%, rgba(10, 65, 116, 0.1) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(123, 189, 232, 0.15);
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.2);
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  border-color: rgba(123, 189, 232, 0.3);
+  box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.4), 0 0 12px 0 rgba(123, 189, 232, 0.15);
+}
+
+.glass-button {
+  background: rgba(10, 65, 116, 0.4);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(123, 189, 232, 0.3);
+  border-radius: 9999px;
+  color: var(--color-sentinel-300);
+  transition: all 0.2s ease;
+}
+
+.glass-button:hover {
+  background: rgba(73, 118, 159, 0.5);
+  border-color: rgba(123, 189, 232, 0.6);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(123, 189, 232, 0.3);
+}
+
+.glass-input {
+  background: rgba(0, 29, 57, 0.4);
+  border: 1px solid rgba(73, 118, 159, 0.3);
+  border-radius: 9999px;
+  color: var(--color-sentinel-300);
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: var(--color-sentinel-400);
+  box-shadow: 0 0 8px rgba(123, 189, 232, 0.3);
+}
+
+.glass-badge {
+  background: rgba(73, 118, 159, 0.2);
+  border: 1px solid rgba(73, 118, 159, 0.4);
+  backdrop-filter: blur(4px);
+  border-radius: 9999px;
+}
+
+.text-gradient {
+  background: linear-gradient(to right, #fff, var(--color-sentinel-400));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }

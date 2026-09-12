@@ -1,0 +1,11 @@
+{
+  "model_type": "HistGradientBoosting",
+  "params": {
+    "max_iter": 200,
+    "max_depth": 10,
+    "learning_rate": 0.1,
+    "min_samples_leaf": 20,
+    "random_state": 42
+  },
+  "trained_at": "2026-09-11T16:07:05.242936"
+}

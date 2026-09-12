@@ -1,0 +1,18 @@
+{
+  "features": [
+    "spkts",
+    "dpkts",
+    "sbytes",
+    "dbytes",
+    "dur",
+    "smean",
+    "dmean",
+    "rate",
+    "sload",
+    "dload",
+    "proto_tcp",
+    "proto_udp",
+    "proto_icmp",
+    "proto_other"
+  ]
+}

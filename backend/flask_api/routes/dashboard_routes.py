@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from backend.database.db_models import db, Prediction
+from backend.database.db_models import db, Prediction, Alert
 from datetime import datetime, timedelta
 
 dashboard_bp = Blueprint('dashboard', __name__, url_prefix='/api/dashboard')
@@ -11,7 +11,7 @@ def get_statistics():
     """
     try:
         total = Prediction.query.count()
-        threats = Prediction.query.filter_by(threat=True).count()
+        threats = Alert.query.count()
         
         rate = 0
         if total > 0:
@@ -37,12 +37,15 @@ def get_live_activity():
         limit = request.args.get('limit', 50, type=int)
         recent = Prediction.query.order_by(Prediction.timestamp.desc()).limit(limit).all()
         
+        # Only mark as threat if a final Alert exists for this prediction
+        alert_pred_ids = {a.prediction_id for a in Alert.query.filter(Alert.prediction_id.in_([p.id for p in recent])).all()}
+        
         return jsonify({
             "activity": [{
                 "id": p.id,
                 "source_ip": p.source_ip,
                 "dest_ip": p.dest_ip,
-                "threat": p.threat,
+                "threat": p.id in alert_pred_ids,
                 "timestamp": p.timestamp.isoformat()
             } for p in recent]
         }), 200
@@ -58,15 +61,14 @@ def get_threat_timeline():
         hours = request.args.get('hours', 24, type=int)
         cutoff = datetime.utcnow() - timedelta(hours=hours)
         
-        # In a real scenario, this would aggregate by hour.
-        # Here we just fetch recent threats.
-        threats = Prediction.query.filter(Prediction.threat == True, Prediction.timestamp >= cutoff).all()
+        # Use final Alerts for the threat timeline
+        threats = db.session.query(Alert, Prediction).join(Prediction).filter(Alert.timestamp >= cutoff).all()
         
         return jsonify({
             "timeline": [{
-                "timestamp": t.timestamp.isoformat(),
-                "type": t.threat_type
-            } for t in threats]
+                "timestamp": alert.timestamp.isoformat(),
+                "type": pred.threat_type
+            } for alert, pred in threats]
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

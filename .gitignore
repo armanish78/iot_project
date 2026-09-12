@@ -22,3 +22,33 @@ data/processed/*.npy
 # IDE files
 .vscode/
 .idea/
+
+# Frontend build output
+frontend/dist/
+
+# Runtime logs
+backend/logs/*.log
+data/logs/
+
+# SQLite database instance folders (runtime-generated, machine-specific)
+backend/instance/
+instance/
+
+# Accidental ghost directory (created by CWD-relative logging path bug, now fixed)
+backend/backend/
+
+# Node Modules
+node_modules/
+
+# Scratch & Temporary
+scratch/
+
+# Large Files & Data
+*.pcap
+*.csv
+*.zip
+*.rar
+*.npy
+
+# Stray SQLite Databases
+*.db

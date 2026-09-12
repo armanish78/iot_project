@@ -1,16 +1,19 @@
 import logging
 import os
+from pathlib import Path
 
 class LoggingService:
     def __init__(self):
         self.logger = logging.getLogger('iot_security')
         self.logger.setLevel(logging.INFO)
         
-        # Ensure logs directory exists
-        log_dir = 'backend/logs'
-        os.makedirs(log_dir, exist_ok=True)
+        # Resolve log directory relative to this file's location:
+        # logging_service.py lives at  backend/services/logging_service.py
+        # logs/               lives at  backend/logs/
+        log_dir = Path(__file__).resolve().parent.parent / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
         
-        handler = logging.FileHandler(os.path.join(log_dir, 'predictions.log'))
+        handler = logging.FileHandler(log_dir / "predictions.log")
         formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
         )

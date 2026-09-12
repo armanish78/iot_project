@@ -21,10 +21,3 @@ def get_logs():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
         
-@log_bp.route('/export', methods=['GET'])
-def export_logs():
-    """
-    GET /api/logs/export
-    """
-    # Simple mock for export
-    return jsonify({"message": "Export functionality would download the log file."}), 200

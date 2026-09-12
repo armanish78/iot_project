@@ -1,120 +1,1000 @@
-import { useEffect, useState } from 'react';
-import { getAlerts } from '../api/client';
-import { AlertOctagon, CheckCircle2, ShieldAlert, AlertTriangle, Info } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { getAlerts, getHealth } from '../api/client';
+import {
+  Bell,
+  Search,
+  Filter,
+  ShieldCheck,
+  ChevronDown,
+  ChevronRight,
+  AlertTriangle,
+  ShieldAlert,
+  Activity,
+  Clock
+} from 'lucide-react';
+
+const FEATURE_MAPPING: Record<string, { name: string, description: string }> = {
+  "spkts": { name: "Packets sent", description: "The number of packets sent from the source to the destination." },
+  "dpkts": { name: "Packets received", description: "The number of packets sent from the destination back to the source." },
+  "sbytes": { name: "Data sent", description: "The total amount of data sent from the source." },
+  "dbytes": { name: "Data received", description: "The total amount of data received from the destination." },
+  "dur": { name: "Connection duration", description: "The total time the network connection was active." },
+  "sttl": { name: "Sender packet lifetime (TTL)", description: "The Time-To-Live value of packets from the sender, indicating routing hops." },
+  "dttl": { name: "Receiver packet lifetime (TTL)", description: "The Time-To-Live value of packets from the receiver, indicating routing hops." },
+  "smean": { name: "Average outgoing packet size", description: "The average amount of data carried by each outgoing packet." },
+  "dmean": { name: "Average incoming packet size", description: "The average amount of data carried by each incoming packet." },
+  "rate": { name: "Packet rate", description: "The total number of packets transferred per second." },
+  "sload": { name: "Outgoing data rate", description: "The speed at which data was sent from the source." },
+  "dload": { name: "Incoming data rate", description: "The speed at which data was received from the destination." },
+  "proto_tcp": { name: "TCP protocol", description: "The communication used the Transmission Control Protocol (TCP)." },
+  "proto_udp": { name: "UDP protocol", description: "The communication used the User Datagram Protocol (UDP)." },
+  "proto_icmp": { name: "ICMP protocol", description: "The communication used the Internet Control Message Protocol (ICMP)." },
+  "proto_other": { name: "Other protocol", description: "The communication used an uncommon network protocol." },
+};
+
+const PROTOCOL_FEATURES = new Set([
+  "proto_tcp",
+  "proto_udp",
+  "proto_icmp",
+  "proto_other"
+]);
+
+/**
+ * Backend timestamps are currently stored as UTC without a timezone
+ * suffix, for example:
+ *
+ *   2026-09-11T06:46:13
+ *
+ * JavaScript would otherwise interpret that as local time.
+ * Adding "Z" explicitly tells the browser that the value is UTC,
+ * after which toLocaleDateString/toLocaleTimeString convert it
+ * to the user's local timezone.
+ */
+function parseBackendTimestamp(timestamp: string): Date {
+  if (!timestamp) {
+    return new Date(NaN);
+  }
+
+  const value = String(timestamp).trim();
+
+  if (
+    value.endsWith("Z") ||
+    /[+-]\d{2}:\d{2}$/.test(value)
+  ) {
+    return new Date(value);
+  }
+
+  return new Date(`${value}Z`);
+}
+
+function formatDate(timestamp: string): string {
+  const date = parseBackendTimestamp(timestamp);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Unknown date";
+  }
+
+  return date.toLocaleDateString();
+}
+
+function formatTime(timestamp: string): string {
+  const date = parseBackendTimestamp(timestamp);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Unknown time";
+  }
+
+  return date.toLocaleTimeString();
+}
+
+function getActualProtocol(
+  protocol_raw: any
+): { name: string; description: string; raw: number } {
+
+  if (!protocol_raw) {
+    return {
+      name: "Protocol could not be determined",
+      description: "Protocol raw values missing.",
+      raw: -1
+    };
+  }
+
+  if (protocol_raw.proto_tcp === 1) {
+    return {
+      ...FEATURE_MAPPING["proto_tcp"],
+      raw: 1
+    };
+  }
+
+  if (protocol_raw.proto_udp === 1) {
+    return {
+      ...FEATURE_MAPPING["proto_udp"],
+      raw: 1
+    };
+  }
+
+  if (protocol_raw.proto_icmp === 1) {
+    return {
+      ...FEATURE_MAPPING["proto_icmp"],
+      raw: 1
+    };
+  }
+
+  if (protocol_raw.proto_other === 1) {
+    return {
+      ...FEATURE_MAPPING["proto_other"],
+      raw: 1
+    };
+  }
+
+  return {
+    name: "Protocol could not be determined",
+    description: "No protocol was definitively observed.",
+    raw: -1
+  };
+}
 
 const Alerts = () => {
   const [alerts, setAlerts] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [expandedAlert, setExpandedAlert] = useState<string | null>(null);
+  const [showTechnicalDetails, setShowTechnicalDetails] = useState<Record<string, boolean>>({});
+  const [limit, setLimit] = useState(20);
+  const [isSystemActive, setIsSystemActive] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
-  useEffect(() => {
-    getAlerts()
-      .then(res => setAlerts(res.data.alerts || []))
-      .catch(err => console.error(err))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const getSeverityIcon = (severity: string) => {
-    switch (severity?.toLowerCase()) {
-      case 'critical': return <ShieldAlert size={16} className="text-red-500" />;
-      case 'high': return <AlertOctagon size={16} className="text-orange-500" />;
-      case 'medium': return <AlertTriangle size={16} className="text-amber-500" />;
-      default: return <Info size={16} className="text-blue-500" />;
+  const fetchAlerts = async (currentLimit: number) => {
+    try {
+      const res = await getAlerts(currentLimit);
+      setAlerts(res.data.alerts || []);
+      setStats(res.data.stats || null);
+    } catch (err) {
+      console.error("Failed to load alerts", err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getSeverityBadge = (severity: string) => {
-    const s = severity?.toLowerCase();
-    if (s === 'critical') return 'bg-red-500/10 text-red-400 border-red-500/20';
-    if (s === 'high') return 'bg-orange-500/10 text-orange-400 border-orange-500/20';
-    if (s === 'medium') return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-    return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-  };
+  useEffect(() => {
+    fetchAlerts(limit);
+
+    getHealth()
+      .then(res => {
+        setIsSystemActive(
+          res.data.status === 'healthy'
+        );
+      })
+      .catch(() => {
+        setIsSystemActive(false);
+      });
+  }, [limit]);
+
+  const filteredAlerts = alerts.filter(alert => {
+    const matchesSearch =
+      alert.source_ip.includes(searchQuery) ||
+      alert.dest_ip.includes(searchQuery) ||
+      alert.threat_type
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      alert.alert_id
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === 'all' ||
+      alert.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex justify-between items-end border-b border-slate-800 pb-5">
+    <div className="space-y-6 animate-in fade-in duration-500">
+
+      {/* PAGE HEADER */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-white tracking-tight">Security Alerts</h2>
-          <p className="text-slate-400 mt-1">Active threats requiring investigation.</p>
-        </div>
-        <div className="bg-red-500/10 text-red-400 px-4 py-2 rounded-lg font-bold border border-red-500/20 flex items-center gap-2 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
-          <span className="relative flex h-2 w-2 mr-1">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-          </span>
-          {alerts.length} ACTIVE
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+              <Bell className="text-[#7BBDE8]" size={24} />
+              Security Alerts
+            </h1>
+
+            <div
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${isSystemActive
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                }`}
+            >
+              <div
+                className={`w-1.5 h-1.5 rounded-full ${isSystemActive
+                    ? 'bg-emerald-400 animate-pulse'
+                    : 'bg-rose-400'
+                  }`}
+              />
+
+              {isSystemActive
+                ? 'Monitoring Active'
+                : 'System Offline'}
+            </div>
+          </div>
+
+          <p className="text-[#6EA2B3] mt-1 font-medium text-sm">
+            Review and investigate suspicious network activity detected by Sentinel.
+          </p>
         </div>
       </div>
 
-      {loading ? (
-        <div className="flex h-64 items-center justify-center text-indigo-400">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mr-3"></div>
-          <span className="font-semibold tracking-wide">Loading alerts...</span>
-        </div>
-      ) : (
-        <div className="bg-[#111827] rounded-xl border border-slate-800 shadow-sm overflow-hidden">
-          {alerts.length === 0 ? (
-            <div className="p-16 text-center flex flex-col items-center justify-center">
-              <div className="bg-emerald-500/10 p-4 rounded-full mb-4">
-                <CheckCircle2 size={48} className="text-emerald-500" />
+      {/* SUMMARY CARDS */}
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+          <div className="glass-card p-5 border-l-2 border-l-[#49769F]">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-[#6EA2B3] text-xs font-bold uppercase tracking-wider mb-1">
+                  Total Alerts
+                </p>
+                <h3 className="text-2xl font-bold text-white">
+                  {stats.total}
+                </h3>
               </div>
-              <h3 className="text-xl text-white font-bold tracking-wide">No Active Alerts</h3>
-              <p className="text-slate-400 mt-2">Your IoT network is currently secure. No anomalies detected.</p>
+
+              <div className="p-2 bg-[#001D39]/50 rounded-lg">
+                <ShieldAlert size={20} className="text-[#7BBDE8]" />
+              </div>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left whitespace-nowrap">
-                <thead className="bg-[#0d131f] text-slate-400 text-xs uppercase tracking-wider font-semibold border-b border-slate-800">
-                  <tr>
-                    <th className="px-6 py-4">Time</th>
-                    <th className="px-6 py-4">Severity</th>
-                    <th className="px-6 py-4">Threat Type</th>
-                    <th className="px-6 py-4">Message / Details</th>
-                    <th className="px-6 py-4">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/50">
-                  {alerts.map((alert: any) => {
-                    const date = new Date(alert.timestamp);
-                    const timeString = `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour12: false })}`;
-                    
-                    return (
-                      <tr key={alert.id} className="hover:bg-slate-800/30 transition-colors group">
-                        <td className="px-6 py-4 text-sm text-slate-400">{timeString}</td>
-                        <td className="px-6 py-4">
-                          <div className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-md text-xs font-bold border ${getSeverityBadge(alert.severity)}`}>
-                            {getSeverityIcon(alert.severity)}
-                            <span className="uppercase">{alert.severity || 'Unknown'}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-sm font-semibold text-slate-200 capitalize tracking-wide">
-                            {alert.alert_type?.replace('_', ' ') || 'Threat Detected'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="text-sm font-mono text-slate-400 truncate max-w-md group-hover:text-slate-300 transition-colors">
-                            {alert.message || 'No additional details provided.'}
-                          </p>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider border ${
-                            alert.status === 'new' 
-                              ? 'bg-red-500/10 text-red-400 border-red-500/20' 
-                              : 'bg-slate-800 text-slate-400 border-slate-700'
-                          }`}>
-                            {alert.status}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+          </div>
+
+          <div className="glass-card p-5 border-l-2 border-l-rose-500">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-[#6EA2B3] text-xs font-bold uppercase tracking-wider mb-1">
+                  Active Alerts
+                </p>
+                <h3 className="text-2xl font-bold text-white">
+                  {stats.active}
+                </h3>
+              </div>
+
+              <div className="p-2 bg-rose-500/10 rounded-lg">
+                <Activity size={20} className="text-rose-400" />
+              </div>
             </div>
-          )}
+          </div>
+
+          <div className="glass-card p-5 border-l-2 border-l-amber-500">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-[#6EA2B3] text-xs font-bold uppercase tracking-wider mb-1">
+                  High Confidence
+                </p>
+                <h3 className="text-2xl font-bold text-white">
+                  {stats.high_confidence}
+                </h3>
+              </div>
+
+              <div className="p-2 bg-amber-500/10 rounded-lg">
+                <AlertTriangle size={20} className="text-amber-400" />
+              </div>
+            </div>
+          </div>
+
+          <div className="glass-card p-5 border-l-2 border-l-[#7BBDE8]">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-[#6EA2B3] text-xs font-bold uppercase tracking-wider mb-1">
+                  Recent Alerts (24h)
+                </p>
+                <h3 className="text-2xl font-bold text-white">
+                  {stats.recent_24h}
+                </h3>
+              </div>
+
+              <div className="p-2 bg-[#7BBDE8]/10 rounded-lg">
+                <Clock size={20} className="text-[#7BBDE8]" />
+              </div>
+            </div>
+          </div>
+
         </div>
       )}
+
+      {/* RECENT ALERTS SECTION */}
+      <div className="glass-card p-6">
+
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-6">
+
+          <div>
+            <h2 className="text-lg font-bold text-white">
+              Recent Alerts
+            </h2>
+
+            <p className="text-[#6EA2B3] text-sm mt-1">
+              Latest suspicious network activity detected by Sentinel.
+            </p>
+          </div>
+
+          <div className="flex gap-3 w-full md:w-auto">
+
+            <div className="relative flex-1 md:w-64">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-[#49769F]"
+                size={16}
+              />
+
+              <input
+                type="text"
+                placeholder="Search alerts..."
+                value={searchQuery}
+                onChange={(e) =>
+                  setSearchQuery(e.target.value)
+                }
+                className="w-full bg-[#001D39]/60 border border-[#49769F]/40 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-[#49769F] focus:outline-none focus:border-[#7BBDE8] transition-colors"
+              />
+            </div>
+
+            <div className="relative flex items-center bg-[#001D39]/60 border border-[#49769F]/40 rounded-lg px-3 py-2 text-sm text-white focus-within:border-[#7BBDE8] transition-colors">
+
+              <Filter
+                className="text-[#49769F] mr-2"
+                size={16}
+              />
+
+              <select
+                value={statusFilter}
+                onChange={(e) =>
+                  setStatusFilter(e.target.value)
+                }
+                className="bg-transparent border-none outline-none text-sm text-white appearance-none pr-4"
+              >
+                <option
+                  value="all"
+                  className="bg-[#0A4174]"
+                >
+                  All Status
+                </option>
+
+                <option
+                  value="active"
+                  className="bg-[#0A4174]"
+                >
+                  Active
+                </option>
+
+                <option
+                  value="acknowledged"
+                  className="bg-[#0A4174]"
+                >
+                  Acknowledged
+                </option>
+
+                <option
+                  value="resolved"
+                  className="bg-[#0A4174]"
+                >
+                  Resolved
+                </option>
+              </select>
+
+            </div>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto rounded-xl border border-[#49769F]/20">
+
+          <table className="w-full text-left border-collapse">
+
+            <thead>
+              <tr className="bg-[#0A4174]/40 border-b border-[#49769F]/30">
+
+                <th className="p-4 text-xs font-bold text-[#6EA2B3] uppercase tracking-wider w-32">
+                  Time
+                </th>
+
+                <th className="p-4 text-xs font-bold text-[#6EA2B3] uppercase tracking-wider w-24">
+                  Alert ID
+                </th>
+
+                <th className="p-4 text-xs font-bold text-[#6EA2B3] uppercase tracking-wider">
+                  Source → Destination
+                </th>
+
+                <th className="p-4 text-xs font-bold text-[#6EA2B3] uppercase tracking-wider">
+                  Threat
+                </th>
+
+                <th className="p-4 text-xs font-bold text-[#6EA2B3] uppercase tracking-wider w-32">
+                  Confidence
+                </th>
+
+                <th className="p-4 text-xs font-bold text-[#6EA2B3] uppercase tracking-wider w-24 text-right">
+                  Status
+                </th>
+
+              </tr>
+            </thead>
+
+            <tbody className="text-sm">
+
+              {loading ? (
+
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="p-8 text-center text-[#BDD8E9] animate-pulse"
+                  >
+                    Loading alerts...
+                  </td>
+                </tr>
+
+              ) : filteredAlerts.length > 0 ? (
+
+                filteredAlerts.map((alert, idx) => {
+
+                  let explanationObj: any = null;
+
+                  try {
+                    if (alert.explanation) {
+                      explanationObj = JSON.parse(
+                        alert.explanation
+                      );
+                    }
+                  } catch (e) { }
+
+                  const isExpanded =
+                    expandedAlert === alert.alert_id;
+
+                  const confidenceNum = (alert.confidence || 0) * 100;
+                  const confidenceDisplay = confidenceNum % 1 === 0 ? confidenceNum.toString() : confidenceNum.toFixed(1);
+                  const isHighConfidence = confidenceNum >= 80;
+
+                  return (
+                    <React.Fragment key={idx}>
+
+                      <tr
+                        onClick={() =>
+                          setExpandedAlert(
+                            isExpanded
+                              ? null
+                              : alert.alert_id
+                          )
+                        }
+                        className={`border-b border-[#49769F]/10 hover:bg-[#0A4174]/20 transition-colors cursor-pointer ${isExpanded
+                            ? 'bg-[#001D39]/30'
+                            : ''
+                          }`}
+                      >
+
+                        <td className="p-4 text-[#BDD8E9] whitespace-nowrap text-xs">
+
+                          <div className="font-medium">
+                            {formatDate(alert.timestamp)}
+                          </div>
+
+                          <div className="text-[#6EA2B3]">
+                            {formatTime(alert.timestamp)}
+                          </div>
+
+                        </td>
+
+                        <td className="p-4 font-mono text-xs text-[#6EA2B3]">
+                          {alert.alert_id.split('-')[0]}
+                        </td>
+
+                        <td className="p-4">
+
+                          <div className="flex items-center gap-2">
+
+                            <span className="font-mono font-bold text-white">
+                              {alert.source_ip}
+                            </span>
+
+                            <span className="text-[#49769F] text-xs">
+                              →
+                            </span>
+
+                            <span className="font-mono text-sm text-[#BDD8E9]">
+                              {alert.dest_ip}
+                            </span>
+
+                          </div>
+
+                        </td>
+
+                        <td className="p-4 text-white font-medium">
+                          {alert.threat_type}
+                        </td>
+
+                        <td className="p-4">
+
+                          <div className="flex flex-col gap-1">
+
+                            {isHighConfidence ? (
+
+                              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
+                                High Confidence
+                              </span>
+
+                            ) : (
+
+                              <span className="text-[10px] font-bold text-[#7BBDE8] uppercase tracking-wider">
+                                Moderate
+                              </span>
+
+                            )}
+
+                            <div className="flex items-center gap-2">
+
+                              <span
+                                className={`text-lg font-bold ${isHighConfidence
+                                    ? 'text-white'
+                                    : 'text-[#BDD8E9]'
+                                  }`}
+                              >
+                                {confidenceDisplay}%
+                              </span>
+
+                            </div>
+
+                          </div>
+
+                        </td>
+
+                        <td className="p-4 text-right">
+
+                          <span
+                            className={`inline-flex items-center px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider border ${alert.status === 'active'
+                                ? 'bg-rose-500/20 text-rose-400 border-rose-500/30'
+                                : alert.status === 'acknowledged'
+                                  ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                                  : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                              }`}
+                          >
+                            {alert.status || 'Unknown'}
+                          </span>
+
+                        </td>
+
+                      </tr>
+
+                      {isExpanded &&
+                        explanationObj &&
+                        explanationObj.top_features && (
+
+                          <tr className="bg-[#001D39]/50 border-b border-[#49769F]/30 shadow-inner">
+
+                            <td
+                              colSpan={6}
+                              className="p-0"
+                            >
+
+                              <div className="p-6 ml-4 border-l-2 border-[#49769F]/30 my-2">
+
+                                <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                                  Why did Sentinel flag this?
+                                </h4>
+
+                                <p className="text-sm text-[#BDD8E9] mb-6">
+                                  {explanationObj.text}
+                                </p>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                                  {/* NETWORK OBSERVATION */}
+
+                                  <div>
+
+                                    <h5 className="text-xs font-bold text-[#6EA2B3] uppercase tracking-wider mb-3 flex items-center gap-2">
+
+                                      <Activity size={14} />
+
+                                      Network Observation
+
+                                    </h5>
+
+                                    <div className="space-y-2">
+
+                                      {(() => {
+
+                                        const actualProtocol =
+                                          getActualProtocol(
+                                            explanationObj.protocol_raw
+                                          );
+
+                                        return (
+                                          <div className="flex justify-between items-center p-3 bg-[#0A4174]/20 rounded border border-[#49769F]/20">
+
+                                            <div>
+
+                                              <div className="text-sm text-white font-medium">
+                                                {actualProtocol.name}
+                                              </div>
+
+                                              <div className="text-xs text-[#6EA2B3] mt-0.5">
+                                                {actualProtocol.description}
+                                              </div>
+
+                                            </div>
+
+                                            <div className="font-mono text-sm text-[#7BBDE8] bg-[#001D39] px-2 py-1 rounded">
+                                              {actualProtocol.raw !== -1
+                                                ? Number(
+                                                  actualProtocol.raw
+                                                ).toFixed(2)
+                                                : 'N/A'}
+                                            </div>
+
+                                          </div>
+                                        );
+
+                                      })()}
+
+                                      {explanationObj.top_features.map(
+                                        (feat: any, i: number) => {
+
+                                          if (
+                                            PROTOCOL_FEATURES.has(
+                                              feat.feature
+                                            ) &&
+                                            feat.raw_value === 1
+                                          ) {
+                                            return null;
+                                          }
+
+                                          let obsMapping;
+
+                                          if (
+                                            PROTOCOL_FEATURES.has(
+                                              feat.feature
+                                            ) &&
+                                            feat.raw_value === 0
+                                          ) {
+
+                                            obsMapping = {
+                                              name:
+                                                `${feat.feature
+                                                  .replace(
+                                                    'proto_',
+                                                    ''
+                                                  )
+                                                  .toUpperCase()} indicator (absent)`,
+
+                                              description:
+                                                `This protocol was not used in the observed traffic.`
+                                            };
+
+                                          } else {
+
+                                            obsMapping =
+                                              FEATURE_MAPPING[
+                                              feat.feature
+                                              ] || {
+                                                name:
+                                                  feat.feature,
+
+                                                description:
+                                                  "Observed network characteristic."
+                                              };
+
+                                          }
+
+                                          return (
+                                            <div
+                                              key={`obs-${i}`}
+                                              className="flex justify-between items-center p-3 bg-[#0A4174]/20 rounded border border-[#49769F]/20"
+                                            >
+
+                                              <div>
+
+                                                <div className="text-sm text-white font-medium">
+                                                  {obsMapping.name}
+                                                </div>
+
+                                                <div className="text-xs text-[#6EA2B3] mt-0.5">
+                                                  {obsMapping.description}
+                                                </div>
+
+                                              </div>
+
+                                              <div className="font-mono text-sm text-[#7BBDE8] bg-[#001D39] px-2 py-1 rounded">
+                                                {feat.raw_value !== undefined
+                                                  ? Number(
+                                                    feat.raw_value
+                                                  ).toFixed(2)
+                                                  : 'N/A'}
+                                              </div>
+
+                                            </div>
+                                          );
+
+                                        }
+                                      )}
+
+                                    </div>
+
+                                  </div>
+
+                                  {/* MODEL EXPLANATION */}
+
+                                  <div>
+
+                                    <h5 className="text-xs font-bold text-[#6EA2B3] uppercase tracking-wider mb-3 flex items-center gap-2">
+
+                                      <ShieldAlert size={14} />
+
+                                      Model Explanation
+
+                                    </h5>
+
+                                    <div className="space-y-2">
+                                      {explanationObj.top_features.length === 0 ? (
+                                        <div className="flex justify-center items-center p-3 bg-[#0A4174]/20 rounded border border-[#49769F]/20 text-sm text-[#6EA2B3]">
+                                          Model contribution explanation unavailable for this prediction.
+                                        </div>
+                                      ) : (
+                                        explanationObj.top_features.map(
+                                          (feat: any, i: number) => {
+
+                                            let mapping;
+
+                                            if (
+                                              PROTOCOL_FEATURES.has(
+                                                feat.feature
+                                              ) &&
+                                              feat.raw_value === 0
+                                            ) {
+
+                                              mapping = {
+                                                name:
+                                                  `${feat.feature
+                                                    .replace(
+                                                      'proto_',
+                                                      ''
+                                                    )
+                                                    .toUpperCase()} indicator (absent)`,
+
+                                                description: ""
+                                              };
+
+                                            } else {
+
+                                              mapping =
+                                                FEATURE_MAPPING[
+                                                feat.feature
+                                                ] || {
+                                                  name:
+                                                    feat.feature,
+
+                                                  description: ""
+                                                };
+
+                                            }
+
+                                            const isPositive =
+                                              feat.impact > 0;
+
+                                            return (
+                                              <div
+                                                key={`exp-${i}`}
+                                                className="flex justify-between items-center p-3 bg-[#0A4174]/20 rounded border border-[#49769F]/20"
+                                              >
+
+                                                <div className="text-sm text-white font-medium">
+                                                  {mapping.name}
+                                                </div>
+
+                                                <div
+                                                  className={`text-xs font-bold px-2 py-1 rounded border flex items-center gap-1 ${isPositive
+                                                      ? 'bg-rose-500/10 border-rose-500/20 text-rose-400'
+                                                      : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                                    }`}
+                                                >
+                                                  {isPositive
+                                                    ? 'Toward threat'
+                                                    : 'Away from threat'}
+                                                </div>
+
+                                              </div>
+                                            );
+                                          }
+                                        )
+                                      )}
+                                    </div>
+
+                                    <p className="text-[10px] text-[#6EA2B3] mt-3 italic leading-relaxed">
+                                      These features had the strongest influence on Sentinel's classification. Positive contribution indicates the model associated this traffic with the threat class.
+                                    </p>
+
+                                  </div>
+
+                                </div>
+
+                                <div className="mt-6 pt-4 border-t border-[#49769F]/20">
+
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+
+                                      setShowTechnicalDetails({
+                                        ...showTechnicalDetails,
+                                        [alert.alert_id]:
+                                          !showTechnicalDetails[
+                                          alert.alert_id
+                                          ]
+                                      });
+                                    }}
+                                    className="flex items-center gap-2 text-xs font-bold text-[#6EA2B3] hover:text-[#7BBDE8] transition-colors uppercase tracking-wider"
+                                  >
+
+                                    {showTechnicalDetails[
+                                      alert.alert_id
+                                    ]
+                                      ? <ChevronDown size={14} />
+                                      : <ChevronRight size={14} />}
+
+                                    Technical SHAP Details
+
+                                  </button>
+
+                                  {showTechnicalDetails[
+                                    alert.alert_id
+                                  ] && (
+
+                                      <div className="mt-3 bg-[#0A4174]/20 p-4 rounded border border-[#49769F]/20 font-mono text-xs text-[#BDD8E9]">
+
+                                        <table className="w-full text-left">
+
+                                          <thead>
+
+                                            <tr className="border-b border-[#49769F]/30 text-[#6EA2B3]">
+
+                                              <th className="py-2 pr-4 font-normal">
+                                                Feature
+                                              </th>
+
+                                              <th className="py-2 pr-4 font-normal">
+                                                Scaled Input
+                                              </th>
+
+                                              <th className="py-2 font-normal text-right">
+                                                SHAP Impact
+                                              </th>
+
+                                            </tr>
+
+                                          </thead>
+
+                                          <tbody>
+
+                                            {explanationObj.top_features.map(
+                                              (feat: any, i: number) => {
+
+                                                const isPositive =
+                                                  feat.impact > 0;
+
+                                                return (
+                                                  <tr
+                                                    key={i}
+                                                    className="border-b border-[#49769F]/10 last:border-0 hover:bg-[#001D39]/30"
+                                                  >
+
+                                                    <td className="py-2 pr-4 text-white">
+                                                      {feat.feature}
+                                                    </td>
+
+                                                    <td className="py-2 pr-4">
+                                                      {feat.scaled_value !== undefined
+                                                        ? Number(
+                                                          feat.scaled_value
+                                                        ).toFixed(4)
+                                                        : 'N/A'}
+                                                    </td>
+
+                                                    <td
+                                                      className={`py-2 text-right ${isPositive
+                                                          ? 'text-rose-400'
+                                                          : 'text-emerald-400'
+                                                        }`}
+                                                    >
+                                                      {isPositive
+                                                        ? '+'
+                                                        : ''}
+                                                      {feat.impact.toFixed(4)}
+                                                    </td>
+
+                                                  </tr>
+                                                );
+
+                                              }
+                                            )}
+
+                                          </tbody>
+
+                                        </table>
+
+                                      </div>
+
+                                    )}
+
+                                </div>
+
+                              </div>
+
+                            </td>
+
+                          </tr>
+
+                        )}
+
+                    </React.Fragment>
+                  );
+                })
+
+              ) : (
+
+                <tr>
+
+                  <td
+                    colSpan={6}
+                    className="p-16 text-center"
+                  >
+
+                    <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
+
+                      <div className="w-16 h-16 bg-[#001D39] rounded-full flex items-center justify-center mb-4 border border-[#49769F]/30">
+
+                        <ShieldCheck
+                          size={32}
+                          className="text-emerald-400"
+                        />
+
+                      </div>
+
+                      <h3 className="text-xl font-bold text-white mb-2">
+                        No threats detected
+                      </h3>
+
+                      <p className="text-[#BDD8E9] text-sm text-center leading-relaxed">
+                        Sentinel has not recorded any alerts matching your criteria. Your network is currently secure.
+                      </p>
+
+                    </div>
+
+                  </td>
+
+                </tr>
+
+              )}
+
+            </tbody>
+
+          </table>
+
+          {!loading &&
+            alerts.length > 0 &&
+            alerts.length >= limit && (
+
+              <div className="p-4 border-t border-[#49769F]/30 flex justify-center bg-[#0A4174]/20">
+
+                <button
+                  onClick={() =>
+                    setLimit(limit + 20)
+                  }
+                  className="glass-button px-6 py-2 text-sm font-bold text-white hover:text-white"
+                >
+                  Load More Alerts
+                </button>
+
+              </div>
+
+            )}
+
+        </div>
+
+      </div>
+
     </div>
   );
 };

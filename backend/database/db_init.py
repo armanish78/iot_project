@@ -9,3 +9,12 @@ def init_db(app: Flask):
     with app.app_context():
         # Create tables if they don't exist
         db.create_all()
+        
+        # Safe migration for run_id
+        from sqlalchemy import text
+        try:
+            db.session.execute(text("ALTER TABLE predictions ADD COLUMN run_id VARCHAR(50)"))
+            db.session.commit()
+        except Exception:
+            # Column likely already exists
+            db.session.rollback()

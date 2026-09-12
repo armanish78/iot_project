@@ -82,8 +82,8 @@ def run_pipeline():
         raw_df = combine_datasets(nbiot_df, unsw_df)
 
         # 2. Clean Data
-        clean_df = remove_duplicates(raw_df)
-        clean_df = remove_irrelevant_columns(clean_df)
+        clean_df = remove_irrelevant_columns(raw_df)
+        clean_df = remove_duplicates(clean_df)
         clean_df = handle_missing_values(clean_df, strategy="mean")
         clean_df = fix_data_types(clean_df)
         validate_data(clean_df)

@@ -1,0 +1,12 @@
+{
+  "model_type": "RandomForest",
+  "params": {
+    "max_depth": 20,
+    "min_samples_leaf": 5,
+    "min_samples_split": 10,
+    "n_estimators": 100,
+    "random_state": 42
+  },
+  "trained_at": "2026-09-11T16:00:44.466484",
+  "dataset": "UNSW-NB15 16-feature benchmark"
+}
